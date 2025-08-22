@@ -1,0 +1,103 @@
+#include <iostream>
+#include <queue>
+#include <string>
+
+using namespace std;
+
+struct Patient {
+    string name;
+    int severity; // Higher value means more critical (for emergency patients)
+    int arrivalOrder; // To maintain order for patients with same severity
+
+    Patient(string n, int s, int order) : name(n), severity(s), arrivalOrder(order) {}
+
+    // Overload < operator for priority queue - max severity first,
+    // if severity same then earlier arrival first
+    bool operator<(const Patient& p) const {
+        if (severity == p.severity) {
+            return arrivalOrder > p.arrivalOrder;
+        }
+        return severity < p.severity;
+    }
+};
+
+class HospitalQueue {
+    priority_queue<Patient> emergencyQueue; // priority queue for critical patients
+    queue<string> regularQueue;              // normal queue for regular patients
+    int emergencyCount;
+    int regularCount;
+    int orderCounter;
+
+public:
+    HospitalQueue() : emergencyCount(0), regularCount(0), orderCounter(0) {}
+
+    // Add patient to emergency queue with severity 1-10
+    void addEmergencyPatient(const string& name, int severity) {
+        emergencyQueue.push(Patient(name, severity, orderCounter++));
+        emergencyCount++;
+        cout << "Emergency patient " << name << " added with severity " << severity << ".\n";
+    }
+
+    // Add patient to regular queue
+    void addRegularPatient(const string& name) {
+        regularQueue.push(name);
+        regularCount++;
+        cout << "Regular patient " << name << " added.\n";
+    }
+
+    // Serve next patient (emergency first)
+    void servePatient() {
+        if (!emergencyQueue.empty()) {
+            cout << "Serving emergency patient: " << emergencyQueue.top().name << "\n";
+            emergencyQueue.pop();
+            emergencyCount--;
+        }
+        else if (!regularQueue.empty()) {
+            cout << "Serving regular patient: " << regularQueue.front() << "\n";
+            regularQueue.pop();
+            regularCount--;
+        }
+        else {
+            cout << "No patients in queue.\n";
+        }
+    }
+
+    // Estimated wait time in minutes
+    // Assuming fixed time per patient: 10 min for emergency, 15 min for regular
+    void displayEstimatedWaitTime(const string& patientType) {
+        if (patientType == "emergency") {
+            int wait = emergencyCount * 10;
+            cout << "Estimated wait time for emergency patients: " << wait << " minutes.\n";
+        }
+        else if (patientType == "regular") {
+            // Wait time is waiting for all emergency patients + regular patients
+            int wait = (emergencyCount * 10) + (regularCount * 15);
+            cout << "Estimated wait time for regular patients: " << wait << " minutes.\n";
+        }
+        else {
+            cout << "Invalid patient type for wait time.\n";
+        }
+    }
+};
+
+int main() {
+    HospitalQueue hospital;
+
+    hospital.addRegularPatient("Alice");
+    hospital.addEmergencyPatient("Bob", 8);
+    hospital.addRegularPatient("Carol");
+    hospital.addEmergencyPatient("David", 10);
+    hospital.addEmergencyPatient("Eve", 5);
+
+    hospital.displayEstimatedWaitTime("emergency");
+    hospital.displayEstimatedWaitTime("regular");
+
+    hospital.servePatient();
+    hospital.servePatient();
+    hospital.servePatient();
+
+    hospital.displayEstimatedWaitTime("emergency");
+    hospital.displayEstimatedWaitTime("regular");
+
+    return 0;
+}
