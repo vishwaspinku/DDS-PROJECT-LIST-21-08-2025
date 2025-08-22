@@ -1,0 +1,205 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cstring>
+
+using namespace std;
+
+struct Contact {
+    string name;
+    string phone;
+    Contact* next;
+
+    Contact(string n, string p) : name(n), phone(p), next(nullptr) {}
+};
+
+class ContactBook {
+    Contact* head;
+    const string filename = "contacts.txt";
+
+public:
+    ContactBook() : head(nullptr) {
+        loadFromFile();
+    }
+
+    ~ContactBook() {
+        saveToFile();
+        clearList();
+    }
+
+    // Insert alphabetically sorted by name
+    void insertContact(const string& name, const string& phone) {
+        Contact* newContact = new Contact(name, phone);
+
+        if (!head || name < head->name) {
+            newContact->next = head;
+            head = newContact;
+            return;
+        }
+
+        Contact* current = head;
+        while (current->next && current->next->name < name) {
+            current = current->next;
+        }
+        newContact->next = current->next;
+        current->next = newContact;
+    }
+
+    void displayContacts() {
+        Contact* current = head;
+        if (!current) {
+            cout << "No contacts found.\n";
+            return;
+        }
+
+        cout << "Contacts List:\n";
+        while (current) {
+            cout << "Name: " << current->name << ", Phone: " << current->phone << "\n";
+            current = current->next;
+        }
+    }
+
+    Contact* searchContact(const string& name) {
+        Contact* current = head;
+        while (current) {
+            if (current->name == name) {
+                return current;
+            }
+            current = current->next;
+        }
+        return nullptr;
+    }
+
+    bool updateContact(const string& name, const string& newPhone) {
+        Contact* contact = searchContact(name);
+        if (contact) {
+            contact->phone = newPhone;
+            return true;
+        }
+        return false;
+    }
+
+    bool deleteContact(const string& name) {
+        if (!head) return false;
+
+        if (head->name == name) {
+            Contact* temp = head;
+            head = head->next;
+            delete temp;
+            return true;
+        }
+
+        Contact* current = head;
+        while (current->next && current->next->name != name) {
+            current = current->next;
+        }
+
+        if (current->next) {
+            Contact* temp = current->next;
+            current->next = current->next->next;
+            delete temp;
+            return true;
+        }
+
+        return false;
+    }
+
+private:
+    void saveToFile() {
+        ofstream outFile(filename);
+        Contact* current = head;
+        while (current) {
+            outFile << current->name << '\n' << current->phone << '\n';
+            current = current->next;
+        }
+        outFile.close();
+    }
+
+    void loadFromFile() {
+        ifstream inFile(filename);
+        if (!inFile) return;
+
+        string name, phone;
+        while (getline(inFile, name) && getline(inFile, phone)) {
+            insertContact(name, phone);
+        }
+        inFile.close();
+    }
+
+    void clearList() {
+        while (head) {
+            Contact* temp = head;
+            head = head->next;
+            delete temp;
+        }
+    }
+};
+
+int main() {
+    ContactBook book;
+
+    int choice;
+    string name, phone;
+
+    do {
+        cout << "\nContact Book Menu:\n";
+        cout << "1. Add Contact\n2. Display Contacts\n3. Search Contact\n"
+             << "4. Update Contact\n5. Delete Contact\n6. Exit\nChoose an option: ";
+        cin >> choice;
+        cin.ignore();
+
+        switch (choice) {
+            case 1:
+                cout << "Enter name: ";
+                getline(cin, name);
+                cout << "Enter phone: ";
+                getline(cin, phone);
+                book.insertContact(name, phone);
+                cout << "Contact added.\n";
+                break;
+            case 2:
+                book.displayContacts();
+                break;
+            case 3:
+                cout << "Enter name to search: ";
+                getline(cin, name);
+                {
+                    Contact* c = book.searchContact(name);
+                    if (c) {
+                        cout << "Found: " << c->name << " - " << c->phone << "\n";
+                    } else {
+                        cout << "Contact not found.\n";
+                    }
+                }
+                break;
+            case 4:
+                cout << "Enter name to update: ";
+                getline(cin, name);
+                cout << "Enter new phone number: ";
+                getline(cin, phone);
+                if (book.updateContact(name, phone)) {
+                    cout << "Contact updated.\n";
+                } else {
+                    cout << "Contact not found.\n";
+                }
+                break;
+            case 5:
+                cout << "Enter name to delete: ";
+                getline(cin, name);
+                if (book.deleteContact(name)) {
+                    cout << "Contact deleted.\n";
+                } else {
+                    cout << "Contact not found.\n";
+                }
+                break;
+            case 6:
+                cout << "Exiting...\n";
+                break;
+            default:
+                cout << "Invalid option. Try again.\n";
+                break;
+        }
+    } while (choice != 6);
+
+    return 0;
+}
